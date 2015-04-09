@@ -22,10 +22,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -34,9 +36,8 @@ import java.util.ArrayList;
  * A placeholder fragment containing a simple view.
  */
 public class LocationFragment extends Fragment {
-
     private LocationAdapter mLocationAdapter;
-    public  View rootView;
+    public View rootView;
     private CenterLocation[] centerLocations;
 
     public LocationFragment() {
@@ -87,10 +88,20 @@ public class LocationFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 CenterLocation location = mLocationAdapter.getItem(position);
-                UpdateLocationTask updateLocation = new UpdateLocationTask();
-                updateLocation.execute(location);
+                mLocationAdapter.clear();
+                for (CenterLocation currCenter : centerLocations) {
+                    if (location == currCenter) {
+                        currCenter.location = true;
+                    } else {
+                        currCenter.location = false;
+                    }
+                    mLocationAdapter.add(currCenter);
+                }
+                UpdateLocationTask updateServer = new UpdateLocationTask();
+                updateServer.execute();
             }
         });
+
 
         return rootView;
     }
@@ -116,7 +127,9 @@ public class LocationFragment extends Fragment {
         }
     }
 
-    public class UpdateLocationTask extends AsyncTask<CenterLocation,Void,CenterLocation[]>{
+    public class UpdateLocationTask extends AsyncTask<Void, Void, Void> {
+        private final String LOG_TAG = UpdateLocationTask.class.getSimpleName();
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -125,26 +138,123 @@ public class LocationFragment extends Fragment {
             name.setText(R.string.sending);
         }
 
-        @Override
-        protected CenterLocation[] doInBackground(CenterLocation... params) {
-            return new CenterLocation[0];
+        private String writeJSON() throws JSONException {
+            JSONObject json = new JSONObject();
+            JSONArray centers = new JSONArray();
+
+            for (int i = 0; i < 3; i++) {
+                JSONObject center = new JSONObject();
+                try {
+                    center.put("current_location", centerLocations[i].location);
+                    center.put("center_name", centerLocations[i].center);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                centers.put(center);
+            }
+
+            try {
+                json.put("center_set", centers);
+                json.put("phone_name", "RCA Phone");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            return json.toString();
         }
 
         @Override
-        protected void onPostExecute(CenterLocation[] centerLocations) {
+        protected Void doInBackground(Void... params) {
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+
+            int phone = 1; //for the RCA Phone
+
+            String json = null;
+            try {
+                json = writeJSON();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return params[0];
+            }
+
+            try {
+                final String BASE_URL = "http://rcaphone.herokuapp.com/api/phones";
+
+                Uri builtUri = Uri.parse(BASE_URL).buildUpon()
+                        .appendPath(Integer.toString(phone))
+                        .build();
+
+                String withSlash = builtUri.toString() + '/';
+                URL url = new URL(withSlash);
+
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setDoInput(true);
+                urlConnection.setDoOutput(true);
+                urlConnection.setRequestMethod("PUT");
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.connect();
+
+                OutputStream outputStream = new BufferedOutputStream(urlConnection.getOutputStream());
+                outputStream.write(json.getBytes());
+                outputStream.flush();
+                outputStream.close();
+
+//                Log.e(LOG_TAG, builtUri.toString());
+//                Log.e(LOG_TAG, json);
+
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuffer buffer = new StringBuffer();
+                if (inputStream == null) {
+                    return null;
+                }
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    buffer.append(line + "\n");
+                }
+                if (buffer.length() == 0) {
+                    return null;
+                }
+
+
+                inputStream.close();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "error", e);
+                return null;
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (final IOException e) {
+                        Log.e(LOG_TAG, "Error closing stream", e);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
             updateView();
         }
     }
 
     public class LocationAdapter extends ArrayAdapter<CenterLocation> {
-        public LocationAdapter(Context context, ArrayList<CenterLocation> centers){
-            super(context,0,centers);
+        public LocationAdapter(Context context, ArrayList<CenterLocation> centers) {
+            super(context, 0, centers);
         }
 
-        public View getView(int position, View convertView, ViewGroup parent){
+        public View getView(int position, View convertView, ViewGroup parent) {
             CenterLocation center = getItem(position);
 
-            if (convertView == null){
+            if (convertView == null) {
                 convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item_location, parent, false);
             }
 
@@ -152,7 +262,7 @@ public class LocationFragment extends Fragment {
 
             list_item_location_textview.setText(center.center);
 
-            if (center.location){
+            if (center.location) {
                 list_item_location_textview.setBackgroundColor(Color.LTGRAY);
                 list_item_location_textview.setTextColor(Color.BLACK);
             } else {
@@ -174,7 +284,7 @@ public class LocationFragment extends Fragment {
         }
     }
 
-    public class FetchLocationTask extends AsyncTask<Void, Void, CenterLocation[]> {
+    public class FetchLocationTask extends AsyncTask<Void, Void, Void> {
         private final String LOG_TAG = FetchLocationTask.class.getSimpleName();
 
         @Override
@@ -185,7 +295,7 @@ public class LocationFragment extends Fragment {
             name.setText(R.string.loading);
         }
 
-        private CenterLocation[] getLocationFromJson(String locationJsonStr) throws JSONException {
+        private void getLocationFromJson(String locationJsonStr) throws JSONException {
 //            final String PHONE = "phone_name";
 //            final String UPDATED = "updated_time";
             final String CENTERS = "center_set";
@@ -208,11 +318,9 @@ public class LocationFragment extends Fragment {
                 CenterLocation currentCenter = new CenterLocation(center, location);
                 centerLocations[i] = currentCenter;
             }
-
-            return result;
         }
 
-        protected CenterLocation[] doInBackground(Void... params) {
+        protected Void doInBackground(Void... params) {
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
 
@@ -273,7 +381,7 @@ public class LocationFragment extends Fragment {
             }
 
             try {
-                return getLocationFromJson(locationJsonStr);
+                getLocationFromJson(locationJsonStr);
             } catch (JSONException e) {
                 Log.e(LOG_TAG, e.getMessage(), e);
                 e.printStackTrace();
@@ -282,8 +390,9 @@ public class LocationFragment extends Fragment {
             return null;
         }
 
+
         @Override
-        protected void onPostExecute(CenterLocation[] centerLocations) {
+        protected void onPostExecute(Void aVoid) {
             updateView();
         }
     }

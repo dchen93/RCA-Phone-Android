@@ -19,20 +19,20 @@
         android:layout_height="match_parent"
         android:gravity="center_horizontal">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:text="@string/loading"
-            android:gravity="center"
-            android:id="@+id/progress"/>
-
         <ProgressBar
-            android:layout_below="@+id/progress"
+            style="@android:style/Widget.ProgressBar.Horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:indeterminate="true"
-            />
+            android:indeterminate="true" />
+
+        <TextView
+            android:id="@+id/progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="0dp"
+            android:gravity="center"
+            android:text="@string/loading" />
+
     </RelativeLayout>
     <!--<TextView-->
     <!--android:layout_width="match_parent"-->
