@@ -29,9 +29,9 @@ public class MainActivity extends ActionBarActivity {
                         .setSmallIcon(android.R.drawable.ic_menu_myplaces)
                         .setPriority(2)
                         .setOngoing(true)
-                        .setContentTitle("Where's the RCA Phone?")
-                        .setContentText("Please Update the Phone Location");
-// Creates an explicit intent for an Activity in your app
+                        .setContentTitle("RCA Phone Location")
+                        .setContentText("Update end of shift location");
+//Creates an explicit intent for an Activity in your app
         Intent resultIntent = new Intent(this, MainActivity.class);
 
 // The stack builder object will contain an artificial back stack for the

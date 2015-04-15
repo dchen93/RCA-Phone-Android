@@ -263,8 +263,8 @@ public class LocationFragment extends Fragment {
             list_item_location_textview.setText(center.center);
 
             if (center.location) {
-                list_item_location_textview.setBackgroundColor(Color.LTGRAY);
-                list_item_location_textview.setTextColor(Color.BLACK);
+                list_item_location_textview.setBackgroundColor(Color.WHITE);
+                list_item_location_textview.setTextColor(Color.DKGRAY);
             } else {
                 list_item_location_textview.setBackgroundColor(Color.DKGRAY);
                 list_item_location_textview.setTextColor(Color.WHITE);
