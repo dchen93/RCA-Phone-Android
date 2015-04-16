@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/darker_gray"
+    android:background="#EEEEEE"
     tools:context=".MainActivity$PlaceholderFragment">
 
     <!--<ImageView-->
@@ -20,9 +20,11 @@
         android:gravity="center_horizontal">
 
         <ProgressBar
-            style="@android:style/Widget.ProgressBar.Horizontal"
+            style="@android:style/Widget.DeviceDefault.ProgressBar.Large"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_margin="5dp"
             android:indeterminate="true" />
 
         <TextView
